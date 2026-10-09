@@ -68,6 +68,14 @@ export default function App() {
             </span>
           </li>
         </ul>
+
+        {/* Shopify App Store listings must link a reachable privacy policy, and
+            reviewers look for it here before they install anything. */}
+        <footer className={styles.footer}>
+          <a className={styles.footerLink} href="/privacy">
+            Privacy Policy
+          </a>
+        </footer>
       </div>
     </div>
   );

@@ -1,0 +1,245 @@
+/* Public legal pages (privacy policy). Outside Polaris — these have to render
+   for a Shopify reviewer or a merchant who has not installed the app — so the
+   layout is plain CSS, but it reads the --pv-* brand tokens from
+   app/styles/pixovanta.css, which root.jsx loads globally. */
+
+.page {
+  min-height: 100vh;
+  padding: 56px 24px 80px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, var(--pv-wash, #F0FBFA) 0%, #FFFFFF 340px);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--pv-ink, #0A1F2C);
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* Header — the same bracketed monospace eyebrow and accent rail as the app. */
+.header {
+  position: relative;
+  padding: 0 0 26px 20px;
+  border-bottom: 1px solid var(--pv-line, #D4E8E5);
+  margin-bottom: 36px;
+}
+
+.header::before {
+  content: "";
+  position: absolute;
+  inset: 4px auto 30px 0;
+  width: 4px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #22D3C5 0%, #0D9488 100%);
+}
+
+.eyebrow {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--pv-accent-dark, #0B6B63);
+  margin: 0 0 12px 0;
+}
+
+.title {
+  font-size: 34px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 0 0 10px 0;
+}
+
+.updated {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--pv-ink-soft, #52646E);
+  margin: 0;
+}
+
+.intro {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--pv-ink-soft, #52646E);
+  margin: 0 0 40px 0;
+}
+
+/* Numbered sections. The counter lives on .wrap so the numbers run in document
+   order without being hard-coded into the markup. */
+.wrap {
+  counter-reset: section;
+}
+
+.section {
+  margin: 0 0 34px 0;
+}
+
+.h2 {
+  counter-increment: section;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px 0;
+}
+
+.h2::before {
+  content: counter(section, decimal-leading-zero);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pv-accent, #0D9488);
+  flex-shrink: 0;
+}
+
+.p {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: #36474F;
+  margin: 0 0 12px 0;
+}
+
+.p:last-child { margin-bottom: 0; }
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.list > li {
+  position: relative;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: #36474F;
+  padding: 4px 0 4px 20px;
+}
+
+.list > li::before {
+  content: "\25B8"; /* ▸ — matches the feature bullets in the app */
+  position: absolute;
+  left: 0;
+  top: 4px;
+  color: var(--pv-accent, #0D9488);
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.term {
+  font-weight: 700;
+  color: var(--pv-ink, #0A1F2C);
+}
+
+.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--pv-wash, #F0FBFA);
+  border: 1px solid var(--pv-line-soft, #E6F2F0);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* Callout for the "we never touch customer data" statement — the single thing a
+   reviewer most wants to find. */
+.callout {
+  position: relative;
+  background: var(--pv-wash, #F0FBFA);
+  border: 1px solid var(--pv-line, #D4E8E5);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin: 0 0 40px 0;
+  overflow: hidden;
+}
+
+.callout::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, #22D3C5 0%, #0D9488 100%);
+}
+
+.calloutTitle {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--pv-accent-dark, #0B6B63);
+  margin: 0 0 6px 0;
+}
+
+.calloutBody {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #36474F;
+  margin: 0;
+}
+
+/* Data table — what is stored, where, and for how long. */
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--pv-line, #D4E8E5);
+  border-radius: 10px;
+  margin: 0 0 12px 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  min-width: 520px;
+}
+
+.table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pv-ink-soft, #52646E);
+  background: var(--pv-wash, #F0FBFA);
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--pv-line, #D4E8E5);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px 14px;
+  line-height: 1.55;
+  color: #36474F;
+  border-bottom: 1px solid var(--pv-line-soft, #E6F2F0);
+  vertical-align: top;
+}
+
+.table tr:last-child td { border-bottom: none; }
+
+.footer {
+  margin-top: 48px;
+  padding-top: 22px;
+  border-top: 1px solid var(--pv-line, #D4E8E5);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--pv-ink-soft, #52646E);
+}
+
+.link {
+  color: var(--pv-accent, #0D9488);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover { text-decoration: underline; }
+
+@media only screen and (max-width: 40rem) {
+  .page { padding: 36px 18px 60px; }
+  .title { font-size: 26px; }
+  .intro { font-size: 15px; }
+}

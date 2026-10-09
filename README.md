@@ -16,6 +16,7 @@ Built on React Router 7 + Shopify Polaris + Prisma (PostgreSQL) + sharp.
 | Optimization Analytics | `/app/imageoptimizationdashboard` | — |
 | Billing | `/app/billing` | — |
 | Pricing wall | `/app/pricing` | shown when no active plan |
+| Privacy policy (public) | `/privacy` | — |
 | Auto-optimize new products | `products/create` webhook | `autoOptimize` (Growth+) |
 
 Internal endpoints: `/api/catalog` (product list, loaded after paint),
@@ -44,6 +45,8 @@ attached to the product they describe.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `SHOPIFY_APP_HANDLE` | `pixovanta` | Fallback handle for the managed-pricing URL. Only used if Shopify's own `currentAppInstallation.app.handle` is unavailable. |
+| `LEGAL_ENTITY_NAME` | `SDLC Limited` | Operator name shown on `/privacy`. |
+| `PRIVACY_CONTACT_EMAIL` | *(unset)* | Contact address shown on `/privacy`. While unset the page points merchants at the App Store listing's support contact instead — set it before submitting for review. |
 | `GOOGLE_PAGESPEED_API_KEY` | — | Raises the PageSpeed Insights rate limit. |
 | `ANTHROPIC_API_KEY` | — | Alternative alt-text provider. |
 | `WEBP_QUALITY` | `76` | First-pass WebP quality. |
@@ -68,6 +71,26 @@ quota and which features unlock.
 
 Plan names in the Partner Dashboard **must** match `Free`, `Starter`, `Growth`,
 `Pro` (a trailing ` Annual` is stripped before matching).
+
+## Privacy & compliance webhooks
+
+`shopify.app.toml` routes `app/uninstalled` **and** the three mandatory GDPR
+topics (`customers/redact`, `customers/data_request`, `shop/redact`) to the single
+`/webhooks/app/uninstalled` endpoint, so that handler branches on `topic`:
+
+| Topic | Action |
+| --- | --- |
+| `APP_UNINSTALLED` | Delete `Session`, `ShopSettings`, `UsageCounter` for the shop |
+| `SHOP_REDACT` | Same deletion, unconditionally (no session left to gate on) |
+| `CUSTOMERS_REDACT` / `CUSTOMERS_DATA_REQUEST` | Acknowledge — the app holds no customer data |
+
+The app requests only `write_products,write_files`, so it cannot read customers,
+orders or checkouts. `ImageSize` is keyed by CDN url with no shop column and is
+intentionally kept as a cache.
+
+Public policy page: [`/privacy`](app/routes/privacy.jsx). It documents actual
+code behaviour — if you change `prisma/schema.prisma`, what is sent off-site, or
+what the webhook deletes, update that page to match.
 
 ## Local development
 

@@ -167,6 +167,25 @@
   color: #52646E;
 }
 
+.footer {
+  margin-top: 36px;
+  padding-top: 20px;
+  border-top: 1px solid #D4E8E5;
+  width: 100%;
+  text-align: center;
+}
+
+.footerLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0B6B63;
+  text-decoration: none;
+}
+
+.footerLink:hover {
+  text-decoration: underline;
+}
+
 @media only screen and (max-width: 50rem) {
   .heading { font-size: 30px; }
   .label { min-width: 0; width: 100%; }
