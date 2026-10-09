@@ -410,6 +410,33 @@ export async function generateAIAltText(imageUrl, productTitle) {
   }
 }
 
+// Surface a rejected metafield write.
+//
+// All three metafieldsSet calls below asked for `userErrors` and then threw the
+// response away, so a refused write looked exactly like a successful one: the
+// run reported images optimized while nothing was recorded, and every report
+// built from those records read zero. Deliberately logs rather than throws —
+// the image itself has already been replaced on the product by this point, so
+// failing the operation would misreport real work as failed. The point is to
+// make the failure visible instead of invisible.
+function logMetafieldErrors(json, context) {
+  const errs = json?.data?.metafieldsSet?.userErrors || [];
+  if (errs.length > 0) {
+    console.error(
+      `[METAFIELD] ${context} rejected:`,
+      errs.map((e) => `${(e.field || []).join(".")}: ${e.message}`).join("; ")
+    );
+  }
+  // A top-level GraphQL error (throttling, bad token) leaves `data` null, which
+  // the userErrors path above cannot see.
+  if (json?.errors?.length) {
+    console.error(
+      `[METAFIELD] ${context} failed:`,
+      json.errors.map((e) => e.message).join("; ")
+    );
+  }
+}
+
 // Recompute product totals from the parsed per-image metafield records and
 // persist the optimization_summary metafield.
 export async function writeSummary(admin, productId, totalImages, records) {
@@ -422,7 +449,7 @@ export async function writeSummary(admin, productId, totalImages, records) {
     ? Math.round(compressed.reduce((s, r) => s + (r.compressionRate || 0), 0) / compressed.length)
     : 0;
 
-  await admin.graphql(
+  const summaryRes = await admin.graphql(
     `#graphql
       mutation CreateMetafield($metafields: [MetafieldsSetInput!]!) {
         metafieldsSet(metafields: $metafields) { userErrors { field message } }
@@ -447,6 +474,7 @@ export async function writeSummary(admin, productId, totalImages, records) {
       },
     }
   );
+  logMetafieldErrors(await summaryRes.json(), `summary for ${productId}`);
 
   return { processed, totalOriginalSizeMB, totalOptimizedSizeMB, totalSizeSavedMB, avgCompressionRate };
 }
@@ -577,7 +605,7 @@ export async function optimizeBatch(admin, productId, opts = {}) {
 
   // Persist the per-image metafields written this batch (up to 25 per call).
   if (newRecords.length > 0) {
-    await admin.graphql(
+    const batchRes = await admin.graphql(
       `#graphql
         mutation CreateMetafields($metafields: [MetafieldsSetInput!]!) {
           metafieldsSet(metafields: $metafields) { userErrors { field message } }
@@ -594,6 +622,7 @@ export async function optimizeBatch(admin, productId, opts = {}) {
         },
       }
     );
+    logMetafieldErrors(await batchRes.json(), `batch records for ${productId}`);
   }
 
   // Meter only images that were actually re-encoded (not skipped) against quota.
@@ -838,7 +867,7 @@ export async function optimizeOneImage({ admin, productId, imageId, shop, plan, 
 }
 
 async function writeImageRecord(admin, productId, key, record) {
-  await admin.graphql(
+  const res = await admin.graphql(
     `#graphql
       mutation SetImageRecord($metafields: [MetafieldsSetInput!]!) {
         metafieldsSet(metafields: $metafields) { userErrors { field message } }
@@ -855,6 +884,7 @@ async function writeImageRecord(admin, productId, key, record) {
       },
     }
   );
+  logMetafieldErrors(await res.json(), `${key} on ${productId}`);
 }
 
 // Close out a product: rewrite the summary from what is actually on it now, and

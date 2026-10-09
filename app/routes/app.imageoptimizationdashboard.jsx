@@ -47,9 +47,21 @@ function getDateRange(timeRange) {
 /**
  * Fetch all products with pagination
  */
+// Reads MEDIA, not `images`.
+//
+// This page used to iterate `product.images`, whose node id is the legacy
+// `gid://shopify/ProductImage/...`. The optimizer keys its per-image records off
+// `gid://shopify/MediaImage/...` — a different identifier that Shopify does not
+// guarantee to match — so `image_<id>` lookups never hit and every optimized
+// image was counted as unoptimized. The page reported "0 optimized / 0 KB
+// saved" on a store that had just been fully optimized.
+//
+// Reading the same connection the writer uses (media -> MediaImage.id) makes
+// the join correct by construction. Note it must be the MediaImage's own `id`,
+// not `image { id }`, which is the underlying file asset.
 async function fetchAllProducts(admin, cursor = null) {
   const query = `#graphql
-    query GetProductsWithImages($cursor: String, $ns: String!) {
+    query GetProductsWithMedia($cursor: String, $ns: String!) {
       products(first: 50, after: $cursor) {
         pageInfo {
           hasNextPage
@@ -60,14 +72,13 @@ async function fetchAllProducts(admin, cursor = null) {
             id
             title
             handle
-            images(first: 250) {
+            media(first: 250) {
               edges {
                 node {
-                  id
-                  url
-                  altText
-                  width
-                  height
+                  ... on MediaImage {
+                    id
+                    image { url }
+                  }
                 }
               }
             }
@@ -76,7 +87,6 @@ async function fetchAllProducts(admin, cursor = null) {
                 node {
                   key
                   value
-                  createdAt
                   updatedAt
                 }
               }
@@ -141,7 +151,12 @@ function processProductsData(products, timeRange) {
   let pageStats = [];
 
   products.forEach(product => {
-    const images = product.images.edges.map(edge => edge.node);
+    // `media` also carries video / 3D model nodes; the inline MediaImage
+    // fragment leaves those as empty objects, so drop anything without an id.
+    const images = (product.media?.edges || [])
+      .map(edge => edge.node)
+      .filter(node => node && node.id && node.image?.url)
+      .map(node => ({ id: node.id, url: node.image.url }));
     const productUrl = `/products/${product.handle}`;
 
     let pageImageCount = 0;
