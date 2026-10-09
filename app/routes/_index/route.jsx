@@ -47,8 +47,9 @@ export default function App() {
             <span className={styles.cardIcon}>◉</span>
             <strong className={styles.cardTitle}>Smart image compression</strong>
             <span className={styles.cardBody}>
-              Reduce image sizes by up to 70% with automatic WebP conversion — the
-              original is replaced safely and the measured saving is recorded.
+              Compress product images and convert them to WebP. The original is
+              replaced in place, and the size saved on each one is measured and
+              recorded rather than estimated.
             </span>
           </li>
           <li className={styles.card}>

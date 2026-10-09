@@ -12,23 +12,23 @@
 // is by name. `getPlanByName` normalizes case and a trailing " Annual" and falls
 // back to the Free tier for unknown / missing names.
 
-// Feature flags used for gating. Features that exist in the app today: optimize,
-// webp, altText, pageSpeed, autoOptimize. The rest are declared now so future
-// features only need their flag flipped + UI built.
+// Feature flags used for gating.
+//
+// This list previously also declared revert, filenameSeo, resize, scheduling,
+// watermark, heic, bulkExport and priority "so future features only need their
+// flag flipped". Nothing ever read them, but they were not inert: the billing
+// page renders every truthy flag as a line under "Included in your plan", and
+// planCatalog.js sold them on the pricing wall. Paid plans were therefore
+// advertising eight capabilities that do not exist — a listing-accuracy
+// rejection waiting to happen, and a promise to anyone who subscribed.
+//
+// Only flags backed by shipped functionality belong here. Add one when the UI
+// lands, not before.
 export const FEATURES = [
-  "optimize",      // image compression / replace
-  "webp",          // WebP conversion
+  "optimize",      // image compression + WebP conversion / replace
   "altText",       // AI alt text
-  "revert",        // restore originals (planned)
-  "filenameSeo",   // SEO filenames (planned)
-  "resize",        // manual resize/crop (planned)
-  "scheduling",    // scheduled runs (planned)
-  "watermark",     // watermarking (planned)
-  "heic",          // HEIC support (planned)
   "autoOptimize",  // background auto-optimize new products
   "pageSpeed",     // PageSpeed Insights reports
-  "bulkExport",    // bulk image export (planned)
-  "priority",      // priority processing (planned)
 ];
 
 function feat(...enabled) {
@@ -46,7 +46,7 @@ export const PLANS = [
     priceAnnual: 0,
     monthlyImages: 100,
     // AI alt text is intentionally NOT in Free — it's a Starter+ feature.
-    features: feat("optimize", "webp", "revert"),
+    features: feat("optimize"),
   },
   {
     tier: "starter",
@@ -54,10 +54,7 @@ export const PLANS = [
     price: 19,
     priceAnnual: 190,
     monthlyImages: 2000,
-    features: feat(
-      "optimize", "webp", "altText", "revert",
-      "filenameSeo", "resize", "scheduling",
-    ),
+    features: feat("optimize", "altText"),
   },
   {
     tier: "growth",
@@ -65,11 +62,7 @@ export const PLANS = [
     price: 49,
     priceAnnual: 490,
     monthlyImages: 15000,
-    features: feat(
-      "optimize", "webp", "altText", "revert",
-      "filenameSeo", "resize", "scheduling",
-      "watermark", "heic", "autoOptimize", "pageSpeed",
-    ),
+    features: feat("optimize", "altText", "autoOptimize", "pageSpeed"),
   },
   {
     tier: "pro",
@@ -77,12 +70,8 @@ export const PLANS = [
     price: 499,
     priceAnnual: 2499,
     monthlyImages: 50000,
-    features: feat(
-      "optimize", "webp", "altText", "revert",
-      "filenameSeo", "resize", "scheduling",
-      "watermark", "heic", "autoOptimize", "pageSpeed",
-      "bulkExport", "priority",
-    ),
+    // Same capabilities as Growth; Pro is purely a higher monthly quota.
+    features: feat("optimize", "altText", "autoOptimize", "pageSpeed"),
   },
 ];
 

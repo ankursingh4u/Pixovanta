@@ -73,7 +73,7 @@ export default function Index() {
     {
       icon: "◉",
       title: "Image Optimizer",
-      desc: "Compress & convert product images to WebP — up to 70% smaller, originals replaced safely.",
+      desc: "Compress & convert product images to WebP. Originals are replaced in place and the saving on each one is measured.",
       cta: "Open optimizer",
       onClick: () => navigate("/app/productoptimization"),
       available: true,

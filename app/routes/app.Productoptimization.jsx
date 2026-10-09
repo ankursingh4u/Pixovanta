@@ -675,7 +675,7 @@ export default function ProductOptimization() {
             <span className="pv-pagehead-icon">◉</span>
             <div>
               <p className="pv-pagehead-title">Image Optimizer</p>
-              <p className="pv-pagehead-sub">WebP conversion &amp; smart compression — up to 70% smaller</p>
+              <p className="pv-pagehead-sub">WebP conversion with the real size saved recorded per image</p>
             </div>
           </div>
         </Layout.Section>

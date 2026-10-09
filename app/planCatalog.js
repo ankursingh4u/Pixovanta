@@ -6,6 +6,13 @@
 // Note: because this is a Managed Pricing app, every "Choose plan" button sends
 // the merchant to Shopify's hosted pricing page where they pick the real plan —
 // the per-tier buttons here are purely informational about what they'll get.
+//
+// EVERY BULLET BELOW MUST BE SOMETHING THE APP DOES TODAY. This list used to
+// advertise restore-originals, SEO filenames, resize & crop, scheduled runs,
+// watermarking, HEIC, bulk export and priority processing — none of which are
+// built. Keep it in step with FEATURES in plans.server.js; a bullet here that
+// a subscriber cannot find in the app is a broken promise and an App Store
+// listing-accuracy rejection.
 export const PLAN_TIERS = [
   {
     name: "Free",
@@ -15,8 +22,9 @@ export const PLAN_TIERS = [
     tagline: "Try it out",
     features: [
       "100 images / month",
-      "WebP conversion & compression",
-      "Restore originals",
+      "Image compression & WebP conversion",
+      "Measured before and after sizes",
+      "Optimization analytics & CSV export",
     ],
   },
   {
@@ -28,10 +36,8 @@ export const PLAN_TIERS = [
     features: [
       "2,000 images / month",
       "Everything in Free",
-      "AI alt text",
-      "SEO filenames",
-      "Resize & crop",
-      "Scheduled runs",
+      "AI alt text generation",
+      "Bulk-apply alt text across a product",
     ],
   },
   {
@@ -45,7 +51,6 @@ export const PLAN_TIERS = [
       "15,000 images / month",
       "Everything in Starter",
       "Auto-optimize new products",
-      "Watermarking & HEIC",
       "Page Speed reports",
     ],
   },
@@ -58,8 +63,6 @@ export const PLAN_TIERS = [
     features: [
       "50,000 images / month",
       "Everything in Growth",
-      "Bulk image export",
-      "Priority processing",
     ],
   },
 ];
