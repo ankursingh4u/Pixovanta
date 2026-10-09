@@ -36,8 +36,20 @@ import {
  * Fetch all products from Shopify with optimization data
  */
 async function getAllProductHandles(admin) {
+  // Ask for the summary by exact key rather than listing the namespace.
+  //
+  // This used to be `metafields(first: 10, namespace: $ns)`, which silently
+  // reported every optimized page as unoptimized. The optimizer writes one
+  // `image_<id>` metafield per image and the `optimization_summary` LAST, so on
+  // any product with 10 or more optimized images the summary falls outside that
+  // window — by key order (`image_…` sorts before `optimization_summary`) and by
+  // creation order alike. The page showed "0 of 27 pages optimized" directly
+  // after a successful 49-image run.
+  //
+  // The singular `metafield(namespace:, key:)` lookup cannot be truncated, has
+  // no ordering dependency, and costs less than the connection it replaces.
   const query = `#graphql
-    query GetProducts($cursor: String, $ns: String!) {
+    query GetProducts($cursor: String, $ns: String!, $key: String!) {
       products(first: 250, after: $cursor) {
         pageInfo {
           hasNextPage
@@ -49,13 +61,8 @@ async function getAllProductHandles(admin) {
             title
             handle
             onlineStoreUrl
-            metafields(first: 10, namespace: $ns) {
-              edges {
-                node {
-                  key
-                  value
-                }
-              }
+            metafield(namespace: $ns, key: $key) {
+              value
             }
           }
         }
@@ -69,7 +76,7 @@ async function getAllProductHandles(admin) {
 
   while (hasNextPage) {
     const response = await admin.graphql(query, {
-      variables: { cursor, ns: MF_NAMESPACE }
+      variables: { cursor, ns: MF_NAMESPACE, key: MF_SUMMARY_KEY }
     });
 
     const data = await response.json();
@@ -174,17 +181,13 @@ async function runPageSpeedTest(url) {
  * (written by the optimizer after actual compression runs).
  */
 function getOptimizationData(product) {
-  const metafields = product.metafields?.edges || [];
-  const optimizationSummary = metafields.find(
-    mf => mf.node.key === MF_SUMMARY_KEY
-  );
-
-  if (!optimizationSummary) {
+  const raw = product.metafield?.value;
+  if (!raw) {
     return null;
   }
 
   try {
-    const data = JSON.parse(optimizationSummary.node.value);
+    const data = JSON.parse(raw);
 
     return {
       totalSizeSavedMB: parseFloat((data.totalSizeSavedMB || 0).toFixed(2)),

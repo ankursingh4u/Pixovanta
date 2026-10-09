@@ -240,6 +240,41 @@ export async function optimizeImage(imageUrl) {
   throw lastErr;
 }
 
+// Shopify serializes media mutations per PRODUCT. The browser runs
+// IMAGE_CONCURRENCY (6) images of the same product at once, and each one does a
+// productCreateMedia plus a productDeleteMedia against that one product, so
+// collisions are expected rather than exceptional:
+//
+//   Media cannot be modified at this moment because it is currently being
+//   modified by another operation
+//
+// Observed at roughly 4% of images on a real run (2 of 49), and each one was a
+// permanently failed image the merchant had to spot and re-run. Dropping the
+// concurrency to 1 would fix it and halve throughput; retrying the few that
+// collide keeps the parallelism and costs nothing on the ones that don't.
+const MEDIA_LOCK_RE = /currently being modified|being modified by another operation|MEDIA_CANNOT_BE_MODIFIED/i;
+
+// Backoff is jittered because the colliding workers would otherwise wake up
+// together and collide again in lockstep.
+async function withMediaLock(label, fn, attempts = 4) {
+  let lastErr;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (attempt > 0) {
+      const base = 300 * 2 ** (attempt - 1); // 300, 600, 1200ms
+      await new Promise((r) => setTimeout(r, base + Math.floor(Math.random() * 250)));
+    }
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const msg = err?.message || "";
+      if (!MEDIA_LOCK_RE.test(msg)) throw err; // a real failure — don't mask it
+      console.warn(`[OPTIMIZE] ${label} locked, attempt ${attempt + 1}/${attempts}`);
+    }
+  }
+  throw lastErr;
+}
+
 // Upload the optimized buffer via Shopify staged uploads, attach it to the
 // product, and delete the original. Returns the new MediaImage gid.
 export async function uploadAndReplaceImage(admin, productId, originalMediaId, optimizedBuffer, altText) {
@@ -280,38 +315,62 @@ export async function uploadAndReplaceImage(admin, productId, originalMediaId, o
   const uploadRes = await timedFetch(target.url, { method: "POST", body: form }, 40000);
   if (!uploadRes.ok) throw new Error(`Staged upload HTTP ${uploadRes.status}`);
 
-  const mediaRes = await admin.graphql(
-    `#graphql
-      mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
-        productCreateMedia(productId: $productId, media: $media) {
-          media { ... on MediaImage { id } }
-          mediaUserErrors { field message }
-        }
-      }`,
-    {
-      variables: {
-        productId,
-        media: [{ alt: altText, mediaContentType: "IMAGE", originalSource: target.resourceUrl }],
-      },
+  const newMedia = await withMediaLock(`create media on ${productId}`, async () => {
+    const mediaRes = await admin.graphql(
+      `#graphql
+        mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+          productCreateMedia(productId: $productId, media: $media) {
+            media { ... on MediaImage { id } }
+            mediaUserErrors { field message }
+          }
+        }`,
+      {
+        variables: {
+          productId,
+          media: [{ alt: altText, mediaContentType: "IMAGE", originalSource: target.resourceUrl }],
+        },
+      }
+    );
+    const mediaData = await mediaRes.json();
+    if (mediaData.data?.productCreateMedia?.mediaUserErrors?.length > 0) {
+      throw new Error(mediaData.data.productCreateMedia.mediaUserErrors[0].message);
     }
-  );
-  const mediaData = await mediaRes.json();
-  if (mediaData.data?.productCreateMedia?.mediaUserErrors?.length > 0) {
-    throw new Error(mediaData.data.productCreateMedia.mediaUserErrors[0].message);
-  }
-  const newMedia = mediaData.data?.productCreateMedia?.media?.[0];
-  if (!newMedia) throw new Error("Failed to attach media to product");
+    const created = mediaData.data?.productCreateMedia?.media?.[0];
+    if (!created) throw new Error("Failed to attach media to product");
+    return created;
+  });
 
-  await admin.graphql(
-    `#graphql
-      mutation productDeleteMedia($productId: ID!, $mediaIds: [ID!]!) {
-        productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
-          deletedMediaIds
-          mediaUserErrors { field message }
-        }
-      }`,
-    { variables: { productId, mediaIds: [originalMediaId] } }
-  );
+  // Deleting the original is retried too, and its errors are now actually read.
+  // They never were: a lock collision here left the original image sitting on
+  // the product next to its optimized copy, so the merchant silently ended up
+  // with duplicates.
+  //
+  // Unlike the create above this must not throw. The optimized copy is already
+  // attached by this point, so the credit is genuinely spent — failing here
+  // would refund it, skip the metafield record, and re-process the image on the
+  // next run. A leftover original is the cheaper, visible failure.
+  try {
+    await withMediaLock(`delete media on ${productId}`, async () => {
+      const delRes = await admin.graphql(
+        `#graphql
+          mutation productDeleteMedia($productId: ID!, $mediaIds: [ID!]!) {
+            productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
+              deletedMediaIds
+              mediaUserErrors { field message }
+            }
+          }`,
+        { variables: { productId, mediaIds: [originalMediaId] } }
+      );
+      const delData = await delRes.json();
+      const err = delData.data?.productDeleteMedia?.mediaUserErrors?.[0];
+      if (err) throw new Error(err.message);
+    });
+  } catch (err) {
+    console.error(
+      `[OPTIMIZE] could not delete original ${originalMediaId} (optimized copy was attached):`,
+      err?.message || err
+    );
+  }
 
   return newMedia.id;
 }
