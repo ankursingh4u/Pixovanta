@@ -1,0 +1,175 @@
+/* Public landing + login page. Styled to the Pixovanta teal theme rather than
+   the unstyled template default, so the page a merchant sees before install
+   looks like the same product as the embedded app. */
+
+.index {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 48px 24px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #F0FBFA 0%, #DEF5F2 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #0A1F2C;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 1000px;
+  width: 100%;
+}
+
+.eyebrow {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #0B6B63;
+  margin: 0 0 16px 0;
+}
+
+.heading {
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  text-align: center;
+  margin: 0 0 12px 0;
+}
+
+.text {
+  font-size: 16px;
+  line-height: 1.55;
+  color: #52646E;
+  text-align: center;
+  max-width: 560px;
+  margin: 0 0 30px 0;
+}
+
+/* Login form — a single rounded field + solid teal button. */
+.form {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 8px 0;
+}
+
+.label {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  min-width: 300px;
+}
+
+.labelText {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #52646E;
+}
+
+.input {
+  padding: 11px 13px;
+  font-size: 14px;
+  color: #0A1F2C;
+  background: #FFFFFF;
+  border: 1px solid #D4E8E5;
+  border-radius: 8px;
+  outline: none;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.20);
+}
+
+.button {
+  padding: 11px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #0D9488 0%, #22D3C5 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px -8px rgba(13, 148, 136, 0.6);
+}
+
+.button:hover {
+  background: linear-gradient(135deg, #0B6B63 0%, #0D9488 100%);
+}
+
+/* Feature cards, each capped by the brand gradient. */
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 44px 0 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #FFFFFF;
+  border: 1px solid #D4E8E5;
+  border-radius: 10px;
+  padding: 24px 20px 22px;
+  overflow: hidden;
+  text-align: left;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0D9488 0%, #22D3C5 100%);
+}
+
+.cardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #F0FBFA;
+  border: 1.5px solid #B7E4DE;
+  font-size: 18px;
+  color: #0B6B63;
+  margin-bottom: 4px;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0A1F2C;
+}
+
+.cardBody {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #52646E;
+}
+
+@media only screen and (max-width: 50rem) {
+  .heading { font-size: 30px; }
+  .label { min-width: 0; width: 100%; }
+  .form { width: 100%; }
+  .button { width: 100%; }
+}

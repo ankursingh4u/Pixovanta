@@ -1,0 +1,36 @@
+name = "Pixovanta"
+client_id = "bfb22a148bb645accf06ea5c2e35ce90"
+application_url = "https://pixovanta.onkra.online"
+embedded = true
+
+
+[access_scopes]
+scopes = "write_products,write_files"
+
+[access.admin]
+direct_api_mode = "online"
+
+[auth]
+redirect_urls = [
+  "https://pixovanta.onkra.online/auth/callback",
+  "https://pixovanta.onkra.online/auth/shopify/callback",
+  "https://pixovanta.onkra.online/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2026-04"
+
+[[webhooks.subscriptions]]
+topics = [ "app/uninstalled" ]
+compliance_topics = [ "customers/redact", "customers/data_request", "shop/redact" ]
+uri = "https://pixovanta.onkra.online/webhooks/app/uninstalled"
+
+[[webhooks.subscriptions]]
+topics = [ "products/create" ]
+uri = "https://pixovanta.onkra.online/webhooks/products/create"
+
+[pos]
+embedded = false
+
+[build]
+automatically_update_urls_on_dev = false

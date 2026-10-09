@@ -1,0 +1,412 @@
+/* Pixovanta Brand Theme — Deep Teal / Aqua.
+ *
+ * Deliberately a different *shape* language from the apps in this family, not
+ * just a different hue: accent RAILS instead of gradient blobs, a dot-grid hero
+ * instead of a radial sheen, ringed circular icons instead of rounded squares,
+ * top cap bars instead of centred badges. Colour alone is easy to mistake for a
+ * re-skin; the geometry is what makes it read as its own product.
+ */
+
+:root {
+  --pv-1: #0D9488;              /* teal 600  — primary */
+  --pv-2: #22D3C5;              /* aqua      — highlight */
+  --pv-deep: #064E4B;           /* pine      — hero ground */
+  --pv-deeper: #04332F;
+  --pv-accent: #0D9488;
+  --pv-accent-dark: #0B6B63;
+  --pv-ink: #0A1F2C;            /* cool near-black */
+  --pv-ink-soft: #52646E;
+  --pv-wash: #F0FBFA;           /* page / panel wash */
+  --pv-wash-2: #DEF5F2;
+  --pv-line: #D4E8E5;           /* hairline on wash */
+  --pv-line-soft: #E6F2F0;
+  --pv-grad: linear-gradient(135deg, #0D9488 0%, #22D3C5 100%);
+  --pv-grad-dark: linear-gradient(135deg, #0B6B63 0%, #0D9488 100%);
+  --pv-grad-soft: linear-gradient(135deg, #F0FBFA 0%, #DEF5F2 100%);
+  --pv-ring: rgba(13, 148, 136, 0.20);
+  --pv-radius: 10px;
+}
+
+/* ── Primary buttons ─────────────────────────────────────────────────────── */
+.Polaris-Button--variantPrimary {
+  background: var(--pv-grad) !important;
+  border-color: var(--pv-1) !important;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.30) !important;
+}
+.Polaris-Button--variantPrimary:hover:not(:disabled) {
+  background: var(--pv-grad-dark) !important;
+  border-color: var(--pv-accent-dark) !important;
+}
+.Polaris-Button--variantPrimary:active:not(:disabled) {
+  background: linear-gradient(135deg, #064E4B 0%, #0B6B63 100%) !important;
+}
+/* A disabled button must LOOK disabled. The rule above sets the gradient with
+   !important on every primary button, which overrides Polaris's own disabled
+   styling — so a button that cannot be clicked looks exactly like one that can,
+   and clicking it appears to do nothing. */
+.Polaris-Button--variantPrimary:disabled,
+.Polaris-Button--variantPrimary[aria-disabled="true"] {
+  background: #EDEFF0 !important;
+  border-color: #EDEFF0 !important;
+  color: #8A9499 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+.Polaris-Button--variantPrimary:disabled .Polaris-Text--root,
+.Polaris-Button--variantPrimary[aria-disabled="true"] .Polaris-Text--root {
+  color: inherit !important;
+}
+
+/* ── Links ───────────────────────────────────────────────────────────────── */
+.Polaris-Link { color: var(--pv-accent) !important; }
+.Polaris-Link:hover { color: var(--pv-accent-dark) !important; }
+
+/* ── Focus rings ─────────────────────────────────────────────────────────── */
+.Polaris-TextField__Input:focus {
+  border-color: var(--pv-accent) !important;
+  box-shadow: 0 0 0 3px var(--pv-ring) !important;
+}
+
+/* ── Checkboxes ──────────────────────────────────────────────────────────── */
+.Polaris-Checkbox__Input:checked + .Polaris-Checkbox__Backdrop {
+  background: var(--pv-accent) !important;
+  border-color: var(--pv-accent) !important;
+}
+
+/* ══ Hero ════════════════════════════════════════════════════════════════ */
+/* A dark pine slab with a vertical accent rail down the left edge and a faint
+   dot grid for texture. Squarer than a pill-shaped banner, so it reads as a
+   console panel rather than a marketing ribbon. */
+.pv-hero {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--pv-deep);
+  background-image:
+    radial-gradient(rgba(34, 211, 197, 0.16) 1px, transparent 1px),
+    linear-gradient(110deg, #064E4B 0%, #075E59 55%, #04332F 100%);
+  background-size: 18px 18px, auto;
+  background-position: 0 0, 0 0;
+  border-radius: var(--pv-radius);
+  padding: 30px 34px 30px 40px;
+  color: #FFFFFF;
+  margin-bottom: 20px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(10, 31, 44, 0.10),
+    0 20px 40px -24px rgba(6, 78, 75, 0.70);
+}
+/* The accent rail — the single strongest visual signature of the theme. */
+.pv-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: linear-gradient(180deg, #22D3C5 0%, #0D9488 100%);
+}
+/* Soft corner glow so the dot grid does not read as flat noise. */
+.pv-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(90% 120% at 100% 0%, rgba(34, 211, 197, 0.18) 0%, rgba(34, 211, 197, 0) 60%);
+  pointer-events: none; /* decorative only — must not block the hero button */
+  z-index: -1;
+}
+.pv-hero-copy { max-width: 620px; }
+.pv-hero-copy h1 { margin-bottom: 10px; }
+/* Bracketed monospace tag rather than a rounded pill. */
+.pv-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pv-2);
+  background: rgba(34, 211, 197, 0.10);
+  border: 1px solid rgba(34, 211, 197, 0.34);
+  border-radius: 4px;
+  padding: 4px 10px;
+  margin: 0;
+}
+.pv-hero-eyebrow::before { content: "["; opacity: 0.65; }
+.pv-hero-eyebrow::after  { content: "]"; opacity: 0.65; }
+.pv-hero h1 {
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: #FFFFFF;
+}
+.pv-hero p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(224, 247, 244, 0.86);
+  margin: 0;
+}
+/* The hero ground is dark, so the brand gradient button would disappear into
+   it — invert to a solid aqua chip with dark ink instead. */
+.pv-hero .Polaris-Button--variantPrimary {
+  background: var(--pv-2) !important;
+  border-color: var(--pv-2) !important;
+  color: #04332F !important;
+  box-shadow: 0 8px 20px -8px rgba(34, 211, 197, 0.65) !important;
+}
+.pv-hero .Polaris-Button--variantPrimary:hover:not(:disabled) {
+  background: #5BE3D8 !important;
+  border-color: #5BE3D8 !important;
+  color: #04332F !important;
+}
+.pv-hero .Polaris-Button--variantPrimary:active:not(:disabled) {
+  background: #11BFAE !important;
+}
+.pv-hero .Polaris-Button--variantPrimary .Polaris-Text--root { color: inherit !important; }
+
+/* ══ Stat cards ══════════════════════════════════════════════════════════ */
+/* Separate cards each capped by a 3px accent bar, value first and label under
+   it — the inverse of a hairline-divided single panel. */
+.pv-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .pv-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.pv-stat {
+  position: relative;
+  background: #FFFFFF;
+  border: 1px solid var(--pv-line);
+  border-radius: var(--pv-radius);
+  padding: 20px 18px 16px;
+  overflow: hidden;
+  min-width: 0;
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+.pv-stat::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--pv-grad);
+}
+.pv-stat:hover {
+  border-color: #9FD9D2;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -14px rgba(6, 78, 75, 0.45);
+}
+.pv-stat-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--pv-ink);
+  margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  max-width: 100%;
+}
+/* Word-valued stats read as a status tag, so a long label like "Growth & up"
+   can't wrap into an overlapping headline. */
+.pv-stat-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  box-sizing: border-box;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  padding: 0 10px;
+  border-radius: 4px;
+  margin: 0 0 10px 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pv-stat-tag--brand     { background: #E6F7F5; color: #0B6B63; border: 1px solid #B7E4DE; }
+.pv-stat-tag--success   { background: #E8F6EE; color: #0C6B45; border: 1px solid #C6E7D7; }
+.pv-stat-tag--attention { background: #FFF6E5; color: #7A4F00; border: 1px solid #F2DDB0; }
+.pv-stat-tag--subdued   { background: #F1F4F5; color: #52646E; border: 1px solid #E2E8EA; }
+.pv-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--pv-ink-soft);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ══ Page header ═════════════════════════════════════════════════════════ */
+/* A tinted wash bar with a ringed circular glyph and a gradient underline,
+   instead of a white card with a gradient left border. */
+.pv-pagehead {
+  position: relative;
+  background: var(--pv-grad-soft);
+  border: 1px solid var(--pv-line);
+  border-radius: var(--pv-radius);
+  padding: 14px 20px 15px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  overflow: hidden;
+}
+.pv-pagehead::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  background: var(--pv-grad);
+}
+.pv-pagehead-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 2px solid var(--pv-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.10);
+}
+.pv-pagehead-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pv-ink);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.pv-pagehead-sub {
+  font-size: 12px;
+  color: var(--pv-accent-dark);
+  margin: 2px 0 0 0;
+}
+
+/* ══ Tool rows ═══════════════════════════════════════════════════════════ */
+/* Ringed circular glyph + a monospace step index, with a hover wash that
+   slides in from the accent edge. */
+.pv-tool {
+  position: relative;
+  transition: background 0.18s ease;
+}
+.pv-tool::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--pv-grad);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.pv-tool:hover { background: var(--pv-wash); }
+.pv-tool:hover::before { opacity: 1; }
+.pv-tool-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1.5px solid var(--pv-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  line-height: 1;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.pv-tool:hover .pv-tool-icon {
+  border-color: var(--pv-1);
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.10);
+}
+.pv-tool-index {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--pv-ink-soft);
+  width: 22px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* ══ Product rows ════════════════════════════════════════════════════════ */
+/* A left status rail whose colour is the optimization score, so the state of a
+   row is readable before any text is. */
+.pv-product {
+  position: relative;
+  border-radius: var(--pv-radius);
+  overflow: hidden;
+}
+.pv-product::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  z-index: 1;
+  background: #DCE3E5;
+}
+.pv-product--done::before    { background: linear-gradient(180deg, #22D3C5 0%, #0D9488 100%); }
+.pv-product--partial::before { background: linear-gradient(180deg, #F6C65B 0%, #D99B13 100%); }
+.pv-product--todo::before    { background: linear-gradient(180deg, #CBD6DA 0%, #A7B6BC 100%); }
+.pv-product--active::before  { background: linear-gradient(180deg, #22D3C5 0%, #22D3C5 100%); }
+
+/* ══ Image tiles (live run) ══════════════════════════════════════════════ */
+.pv-tile-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+/* ══ Section label ═══════════════════════════════════════════════════════ */
+/* Small uppercase rule-and-label used above groups, in place of plain headings
+   on the denser pages. */
+.pv-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--pv-ink-soft);
+  margin: 0;
+}
+.pv-eyebrow::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--pv-line);
+}
+
+/* ══ Step badge ══════════════════════════════════════════════════════════ */
+/* Squared-off chip rather than a circle. */
+.pv-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--pv-grad);
+  color: #FFFFFF;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
