@@ -104,5 +104,28 @@ npm run dev          # shopify app dev
 
 The `Dockerfile` installs dependencies, runs `prisma generate` and
 `react-router build`, then starts with `npm run docker-start`
-(`prisma db push` followed by `react-router-serve`). A Docker `HEALTHCHECK`
+(`prisma db push` followed by `node ./server.js`). A Docker `HEALTHCHECK`
 polls `/healthz`.
+
+### Why `server.js` instead of `react-router-serve`
+
+`react-router-serve` never sets Express's `trust proxy`, and offers no flag to.
+Behind a TLS-terminating reverse proxy (Coolify/Traefik here) that makes
+`req.protocol` report `http`, so `@react-router/express` builds
+`request.url` as `http://<host>/…` while the browser sends
+`Origin: https://<host>` on every POST. React Router's
+`throwIfPotentialCSRFAttack` compares the two and rejects the request with
+**400 Bad Request** — breaking *every* action in the app (alt text, the
+auto-optimize toggle, `/api/optimize`, the live PageSpeed test, CSV export,
+cancel) while all GET pages keep working. Shopify's webhook POSTs are
+unaffected because server-to-server requests send no `Origin`.
+
+`server.js` is the stock `react-router-serve` middleware stack plus
+`app.set("trust proxy", …)`. It also pins `allowedActionOrigins` to the host in
+`SHOPIFY_APP_URL` as a safety net, so actions keep working if the proxy ever
+stops sending `X-Forwarded-Proto`. Requests from any other origin are still
+rejected.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `TRUST_PROXY` | `1` | Number of proxy hops to trust. Raise if you put another proxy (e.g. Cloudflare) in front of Traefik. |
