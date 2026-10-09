@@ -4,12 +4,8 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider as ShopifyAppProvider } from "@shopify/shopify-app-react-router/react";
 import { AppProvider as PolarisAppProvider } from "@shopify/polaris";
 import { authenticate, sessionStorage } from "../shopify.server";
-import {
-  getBillingStateCached,
-  managedPricingUrl,
-} from "../billing.server";
+import { getBillingStateCached } from "../billing.server";
 import { entitled } from "../plans.server";
-import PricingTiers from "../components/PricingTiers";
 
 import "@shopify/polaris/build/esm/styles.css";
 
@@ -22,24 +18,32 @@ function isExpiredToken(e) {
 export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
 
-  let hasActivePlan = false;
+  // No subscription is NOT a locked door.
+  //
+  // This used to render a full-page pricing wall whenever hasActivePlan was
+  // false — no nav, no routes, nothing. That contradicted getBillingState,
+  // which deliberately falls back to FREE_PLAN "so an installed shop is always
+  // usable", and it carried a real lockout risk: Shopify does not reliably
+  // create an AppSubscription for a $0 managed-pricing plan, so a merchant who
+  // picked Free could come back to the same wall forever, as could an App Store
+  // reviewer who never subscribes.
+  //
+  // Entitlements are already enforced per feature — the nav hides what a plan
+  // does not include, each gated loader redirects, and each gated action
+  // refuses — so the wall was never what protected paid features. Free now gets
+  // the app it is entitled to (compression, WebP, analytics) and upgrade paths
+  // live on the home page and Billing.
   let features = { pageSpeed: false, altText: false };
-  // The pricing-wall CTA is a direct top-frame link to Shopify's managed-pricing
-  // page, so the URL must be available even when no plan is active (that's when
-  // the wall shows). Default to the fallback app handle; refined below.
-  let pricingUrl = managedPricingUrl(session.shop);
   try {
-    // Subscription state gates the whole app. Cached per-shop (positive results
-    // only) so paying merchants don't pay a Shopify roundtrip on every click;
-    // a fresh subscribe still unlocks instantly since negatives aren't cached.
+    // Cached per-shop (positive results only) so paying merchants don't pay a
+    // Shopify roundtrip on every click; a fresh subscribe still unlocks
+    // instantly since negatives aren't cached.
     const state = await getBillingStateCached(admin, session.shop);
-    hasActivePlan = state.hasActivePlan;
     // Entitlement booleans drive which nav items render (Page Speed, Alt Text).
     features = {
       pageSpeed: entitled(state.plan, "pageSpeed"),
       altText: entitled(state.plan, "altText"),
     };
-    pricingUrl = managedPricingUrl(session.shop, state.appHandle);
   } catch (e) {
     // Propagate redirect Responses (e.g. OAuth flow initiated by the library),
     // but treat 4xx Responses as an expired/revoked token — trigger re-auth
@@ -48,28 +52,27 @@ export const loader = async ({ request }) => {
       if (e.status >= 300 && e.status < 400) throw e;
       await sessionStorage.deleteSession(session.id);
       // eslint-disable-next-line no-undef
-      return { apiKey: process.env.SHOPIFY_API_KEY || "", hasActivePlan: false, needsReauth: true, shop: session.shop };
+      return { apiKey: process.env.SHOPIFY_API_KEY || "", needsReauth: true, shop: session.shop };
     }
     // Expired token via a plain Error object (networkStatusCode === 403 etc.)
     if (isExpiredToken(e)) {
       await sessionStorage.deleteSession(session.id);
       // eslint-disable-next-line no-undef
-      return { apiKey: process.env.SHOPIFY_API_KEY || "", hasActivePlan: false, needsReauth: true, shop: session.shop };
+      return { apiKey: process.env.SHOPIFY_API_KEY || "", needsReauth: true, shop: session.shop };
     }
-    hasActivePlan = false;
+    // Billing unreachable — fall through with the Free entitlements already in
+    // `features` rather than locking the merchant out of a working app.
   }
 
   // eslint-disable-next-line no-undef
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
-    hasActivePlan,
     features,
-    pricingUrl,
   };
 };
 
 export default function App() {
-  const { apiKey, hasActivePlan, needsReauth, shop, features, pricingUrl } = useLoaderData();
+  const { apiKey, needsReauth, shop, features } = useLoaderData();
 
   // Expired token: break out of the Shopify iframe so OAuth runs in the top frame
   useEffect(() => {
@@ -83,25 +86,19 @@ export default function App() {
   return (
     <ShopifyAppProvider embedded apiKey={apiKey}>
       <PolarisAppProvider i18n={enTranslations}>
-        {hasActivePlan ? (
-          <>
-            <ui-nav-menu>
-              <a href="/app" rel="home">Home</a>
-              <a href="/app/productoptimization">Image Optimization</a>
-              {features?.altText && (
-                <a href="/app/alttextsuggestions">Alt Text Generator</a>
-              )}
-              {features?.pageSpeed && (
-                <a href="/app/pagespeedimpactreports">Page Speed Reports</a>
-              )}
-              <a href="/app/imageoptimizationdashboard">Analytics</a>
-              <a href="/app/billing">Billing</a>
-            </ui-nav-menu>
-            <Outlet />
-          </>
-        ) : (
-          <PricingTiers pricingUrl={pricingUrl} />
-        )}
+        <ui-nav-menu>
+          <a href="/app" rel="home">Home</a>
+          <a href="/app/productoptimization">Image Optimization</a>
+          {features?.altText && (
+            <a href="/app/alttextsuggestions">Alt Text Generator</a>
+          )}
+          {features?.pageSpeed && (
+            <a href="/app/pagespeedimpactreports">Page Speed Reports</a>
+          )}
+          <a href="/app/imageoptimizationdashboard">Analytics</a>
+          <a href="/app/billing">Billing</a>
+        </ui-nav-menu>
+        <Outlet />
       </PolarisAppProvider>
     </ShopifyAppProvider>
   );
