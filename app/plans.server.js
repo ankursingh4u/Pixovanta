@@ -4,7 +4,7 @@
 // prices/trials) are created in the Partner Dashboard, and a merchant subscribes
 // to one on Shopify's hosted pricing page. The app cannot create charges; its job
 // is to read the *name* of the merchant's active subscription and map it to the
-// tier defined here — which decides the monthly image quota and which features
+// tier defined here — which decides the monthly file-operation quota and which features
 // are unlocked.
 //
 // IMPORTANT: the plan names below (and their "<name> Annual" variants) MUST match
@@ -14,21 +14,15 @@
 
 // Feature flags used for gating.
 //
-// This list previously also declared revert, filenameSeo, resize, scheduling,
-// watermark, heic, bulkExport and priority "so future features only need their
-// flag flipped". Nothing ever read them, but they were not inert: the billing
-// page renders every truthy flag as a line under "Included in your plan", and
-// planCatalog.js sold them on the pricing wall. Paid plans were therefore
-// advertising eight capabilities that do not exist — a listing-accuracy
-// rejection waiting to happen, and a promise to anyone who subscribed.
-//
-// Only flags backed by shipped functionality belong here. Add one when the UI
-// lands, not before.
+// Only flags backed by shipped functionality belong here — the billing page
+// renders every truthy flag as a line under "Included in your plan", and
+// planCatalog.js sells them on the pricing page, so an unshipped flag is a
+// broken promise and an App Store listing-accuracy rejection. Add one when the
+// UI lands, not before.
 export const FEATURES = [
-  "optimize",      // image compression + WebP conversion / replace
-  "altText",       // AI alt text
-  "autoOptimize",  // background auto-optimize new products
-  "pageSpeed",     // PageSpeed Insights reports
+  "duplicates", // duplicate finder (content-hash scan + cleanup)
+  "rename",     // bulk rename
+  "unused",     // files not used by any product + bulk cleanup
 ];
 
 function feat(...enabled) {
@@ -38,40 +32,41 @@ function feat(...enabled) {
 
 // Tier catalog, cheapest → most expensive. `tier` is the stable internal key;
 // `name` is the human/Partner-Dashboard plan name used for resolution.
+// `monthlyFiles` meters billable file operations: fresh duplicate-scan hashes
+// (cache hits are free) and bulk renames. Deletes are never metered.
 export const PLANS = [
   {
     tier: "free",
     name: "Free",
     price: 0,
     priceAnnual: 0,
-    monthlyImages: 100,
-    // AI alt text is intentionally NOT in Free — it's a Starter+ feature.
-    features: feat("optimize"),
+    monthlyFiles: 200,
+    features: feat("duplicates"),
   },
   {
     tier: "starter",
     name: "Starter",
     price: 19,
     priceAnnual: 190,
-    monthlyImages: 2000,
-    features: feat("optimize", "altText"),
+    monthlyFiles: 2000,
+    features: feat("duplicates", "rename"),
   },
   {
     tier: "growth",
     name: "Growth",
     price: 49,
     priceAnnual: 490,
-    monthlyImages: 15000,
-    features: feat("optimize", "altText", "autoOptimize", "pageSpeed"),
+    monthlyFiles: 15000,
+    features: feat("duplicates", "rename", "unused"),
   },
   {
     tier: "pro",
     name: "Pro",
     price: 499,
     priceAnnual: 2499,
-    monthlyImages: 50000,
+    monthlyFiles: 50000,
     // Same capabilities as Growth; Pro is purely a higher monthly quota.
-    features: feat("optimize", "altText", "autoOptimize", "pageSpeed"),
+    features: feat("duplicates", "rename", "unused"),
   },
 ];
 

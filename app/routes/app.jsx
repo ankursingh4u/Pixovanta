@@ -31,18 +31,18 @@ export const loader = async ({ request }) => {
   // Entitlements are already enforced per feature — the nav hides what a plan
   // does not include, each gated loader redirects, and each gated action
   // refuses — so the wall was never what protected paid features. Free now gets
-  // the app it is entitled to (compression, WebP, analytics) and upgrade paths
-  // live on the home page and Billing.
-  let features = { pageSpeed: false, altText: false };
+  // the app it is entitled to (media overview, duplicate finder) and upgrade
+  // paths live on the home page and Billing.
+  let features = { rename: false, unused: false };
   try {
     // Cached per-shop (positive results only) so paying merchants don't pay a
     // Shopify roundtrip on every click; a fresh subscribe still unlocks
     // instantly since negatives aren't cached.
     const state = await getBillingStateCached(admin, session.shop);
-    // Entitlement booleans drive which nav items render (Page Speed, Alt Text).
+    // Entitlement booleans drive which nav items render (Rename, Unused files).
     features = {
-      pageSpeed: entitled(state.plan, "pageSpeed"),
-      altText: entitled(state.plan, "altText"),
+      rename: entitled(state.plan, "rename"),
+      unused: entitled(state.plan, "unused"),
     };
   } catch (e) {
     // Propagate redirect Responses (e.g. OAuth flow initiated by the library),
@@ -88,14 +88,13 @@ export default function App() {
       <PolarisAppProvider i18n={enTranslations}>
         <ui-nav-menu>
           <a href="/app" rel="home">Home</a>
-          <a href="/app/productoptimization">Image Optimization</a>
-          {features?.altText && (
-            <a href="/app/alttextsuggestions">Alt Text Generator</a>
+          <a href="/app/duplicatefinder">Duplicate Finder</a>
+          {features?.unused && (
+            <a href="/app/unusedfiles">Unused Files</a>
           )}
-          {features?.pageSpeed && (
-            <a href="/app/pagespeedimpactreports">Page Speed Reports</a>
+          {features?.rename && (
+            <a href="/app/bulkrename">Bulk Rename</a>
           )}
-          <a href="/app/imageoptimizationdashboard">Analytics</a>
           <a href="/app/billing">Billing</a>
         </ui-nav-menu>
         <Outlet />

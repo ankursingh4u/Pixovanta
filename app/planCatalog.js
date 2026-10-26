@@ -7,24 +7,23 @@
 // the merchant to Shopify's hosted pricing page where they pick the real plan —
 // the per-tier buttons here are purely informational about what they'll get.
 //
-// EVERY BULLET BELOW MUST BE SOMETHING THE APP DOES TODAY. This list used to
-// advertise restore-originals, SEO filenames, resize & crop, scheduled runs,
-// watermarking, HEIC, bulk export and priority processing — none of which are
-// built. Keep it in step with FEATURES in plans.server.js; a bullet here that
-// a subscriber cannot find in the app is a broken promise and an App Store
-// listing-accuracy rejection.
+// EVERY BULLET BELOW MUST BE SOMETHING THE APP DOES TODAY. Keep it in step
+// with FEATURES in plans.server.js; a bullet here that a subscriber cannot
+// find in the app is a broken promise and an App Store listing-accuracy
+// rejection. "File operations" = fresh duplicate-scan hashes + applied
+// renames; deletes and cached re-scans are free.
 export const PLAN_TIERS = [
   {
     name: "Free",
     price: 0,
     priceAnnual: 0,
-    images: "100",
+    images: "200",
     tagline: "Try it out",
     features: [
-      "100 images / month",
-      "Image compression & WebP conversion",
-      "Measured before and after sizes",
-      "Optimization analytics & CSV export",
+      "200 file operations / month",
+      "Media library dashboard",
+      "Duplicate finder (content-hash scan)",
+      "Bulk duplicate cleanup",
     ],
   },
   {
@@ -34,10 +33,10 @@ export const PLAN_TIERS = [
     images: "2,000",
     tagline: "For growing stores",
     features: [
-      "2,000 images / month",
+      "2,000 file operations / month",
       "Everything in Free",
-      "AI alt text generation",
-      "Bulk-apply alt text across a product",
+      "Bulk rename with full preview",
+      "Filename clean-up (lowercase, dashes)",
     ],
   },
   {
@@ -48,10 +47,10 @@ export const PLAN_TIERS = [
     tagline: "Most popular",
     popular: true,
     features: [
-      "15,000 images / month",
+      "15,000 file operations / month",
       "Everything in Starter",
-      "Auto-optimize new products",
-      "Page Speed reports",
+      "Unused-file detection",
+      "Bulk cleanup of unreferenced files",
     ],
   },
   {
@@ -61,7 +60,7 @@ export const PLAN_TIERS = [
     images: "50,000",
     tagline: "High volume",
     features: [
-      "50,000 images / month",
+      "50,000 file operations / month",
       "Everything in Growth",
     ],
   },

@@ -20,7 +20,7 @@ export default function PricingTiers({ pricingUrl }) {
         <p style={s.appLabel}>[ PIXOVANTA ]</p>
         <h1 style={s.heading}>Pricing that scales with you.</h1>
         <p style={s.subheading}>
-          Optimize images, boost speed, and rank higher — pick the plan that fits your catalog.
+          Find duplicates, clear out dead files, and keep your media library organized — pick the plan that fits your store.
         </p>
       </div>
 
@@ -38,7 +38,7 @@ export default function PricingTiers({ pricingUrl }) {
 
               <div style={s.quotaRow}>
                 <span style={s.quotaValue}>{tier.images}</span>
-                <span style={s.quotaUnit}>images / month</span>
+                <span style={s.quotaUnit}>operations / month</span>
               </div>
 
               <a

@@ -4,7 +4,8 @@ import { authenticate } from "../shopify.server";
 import { getBillingStateCached } from "../billing.server";
 import { getUsage } from "../usage.server";
 import { entitled } from "../plans.server";
-import db from "../db.server";
+import { listFiles } from "../media.server";
+import { formatBytes } from "../format";
 import {
   Page,
   Layout,
@@ -19,6 +20,10 @@ import {
   Divider,
 } from "@shopify/polaris";
 
+// The home snapshot walks at most this many files — enough for an accurate
+// picture on most stores without pinning the loader on a huge library.
+const SNAPSHOT_MAX = 1000;
+
 export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
 
@@ -29,99 +34,97 @@ export const loader = async ({ request }) => {
     if (e instanceof Response) throw e; // let re-auth propagate
   }
 
-  let usage = { imagesUsed: 0 };
-  let autoOptimize = false;
+  let usage = { filesUsed: 0 };
   try {
     usage = await getUsage(session.shop);
-    const settings = await db.shopSettings.findUnique({ where: { shop: session.shop } });
-    autoOptimize = settings?.autoOptimize ?? false;
-  } catch { /* usage/settings tables not ready — defaults */ }
+  } catch { /* usage table not ready — defaults */ }
+
+  // Library snapshot: counts, storage, largest files. Failure here must not
+  // take down the home page — render the dashboards with placeholders instead.
+  let snapshot = null;
+  try {
+    const { files, truncated } = await listFiles(admin, { max: SNAPSHOT_MAX });
+    const byType = { image: 0, video: 0, file: 0 };
+    let totalBytes = 0;
+    for (const f of files) {
+      byType[f.type] = (byType[f.type] || 0) + 1;
+      totalBytes += f.bytes || 0;
+    }
+    const largest = [...files]
+      .filter((f) => f.bytes != null)
+      .sort((a, b) => b.bytes - a.bytes)
+      .slice(0, 5)
+      .map((f) => ({ id: f.id, filename: f.filename, bytes: f.bytes, type: f.type }));
+    snapshot = { count: files.length, truncated, byType, totalBytes, largest };
+  } catch (e) {
+    console.error("[HOME] library snapshot failed:", e?.message || e);
+  }
 
   return {
     plan: {
       name: plan?.name || "Free",
       tier: plan?.tier || "free",
-      monthlyImages: plan?.monthlyImages ?? 100,
-      altText: entitled(plan, "altText"),
-      pageSpeed: entitled(plan, "pageSpeed"),
-      autoOptimizeAllowed: entitled(plan, "autoOptimize"),
+      monthlyFiles: plan?.monthlyFiles ?? 200,
+      rename: entitled(plan, "rename"),
+      unused: entitled(plan, "unused"),
     },
     usage,
-    autoOptimize,
+    snapshot,
   };
 };
 
 export default function Index() {
   const navigate = useNavigate();
-  const { plan, usage, autoOptimize } = useLoaderData();
+  const { plan, usage, snapshot } = useLoaderData();
 
-  const quota = plan.monthlyImages || 0;
-  const used = usage?.imagesUsed || 0;
+  const quota = plan.monthlyFiles || 0;
+  const used = usage?.filesUsed || 0;
   const remaining = Math.max(0, quota - used);
   const pct = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0;
   const fmt = (n) => Number(n).toLocaleString();
-
-  const autoStatus = !plan.autoOptimizeAllowed
-    ? { label: "Growth & up", tone: "attention" }
-    : autoOptimize
-      ? { label: "On", tone: "success" }
-      : { label: "Off", tone: undefined };
 
   // Tool rows — a horizontal list with a ringed glyph and a monospace index,
   // so the set reads as a numbered workflow rather than a card grid.
   const tools = [
     {
-      icon: "◉",
-      title: "Image Optimizer",
-      desc: "Compress & convert product images to WebP. Originals are replaced in place and the saving on each one is measured.",
-      cta: "Open optimizer",
-      onClick: () => navigate("/app/productoptimization"),
+      icon: "⧉",
+      title: "Duplicate Finder",
+      desc: "Scan your file library for exact duplicates by content, see the wasted storage, and clean up copies in bulk while keeping the original.",
+      cta: "Find duplicates",
+      onClick: () => navigate("/app/duplicatefinder"),
       available: true,
     },
     {
-      icon: "✦",
-      title: "AI Alt Text",
-      desc: "Generate SEO alt text for every image with AI vision, then bulk-apply in one click.",
-      cta: plan.altText ? "Generate alt text" : "Upgrade to Starter",
-      onClick: () => navigate(plan.altText ? "/app/alttextsuggestions" : "/app/billing"),
-      available: plan.altText,
-      badge: plan.altText ? undefined : { label: "Starter & up", tone: "attention" },
+      icon: "◌",
+      title: "Unused Files",
+      desc: "List files that no product references — old banners, replaced images, abandoned uploads — and remove them in bulk.",
+      cta: plan.unused ? "Review unused files" : "Upgrade to Growth",
+      onClick: () => navigate(plan.unused ? "/app/unusedfiles" : "/app/billing"),
+      available: plan.unused,
+      badge: plan.unused ? undefined : { label: "Growth & up", tone: "attention" },
     },
     {
-      icon: "↻",
-      title: "Auto-optimize new products",
-      desc: "Set & forget — every newly created product gets optimized automatically in the background.",
-      cta: plan.autoOptimizeAllowed ? "Manage" : "Upgrade to Growth",
-      onClick: () => navigate(plan.autoOptimizeAllowed ? "/app/productoptimization" : "/app/billing"),
-      available: plan.autoOptimizeAllowed,
-      badge: autoStatus,
-    },
-    {
-      icon: "◬",
-      title: "Page Speed Reports",
-      desc: "Track Core Web Vitals (LCP, CLS, TBT) and see before/after gains per product page.",
-      cta: plan.pageSpeed ? "View reports" : "Upgrade to Growth",
-      onClick: () => navigate(plan.pageSpeed ? "/app/pagespeedimpactreports" : "/app/billing"),
-      available: plan.pageSpeed,
-      badge: plan.pageSpeed ? undefined : { label: "Growth & up", tone: "attention" },
-    },
-    {
-      icon: "▤",
-      title: "Optimization Analytics",
-      desc: "Measured savings by format, recent activity, and your top optimized pages — exportable as CSV.",
-      cta: "View analytics",
-      onClick: () => navigate("/app/imageoptimizationdashboard"),
-      available: true,
+      icon: "✎",
+      title: "Bulk Rename",
+      desc: "Find & replace, prefix or suffix across many filenames at once, with a preview of every change before it's applied.",
+      cta: plan.rename ? "Rename files" : "Upgrade to Starter",
+      onClick: () => navigate(plan.rename ? "/app/bulkrename" : "/app/billing"),
+      available: plan.rename,
+      badge: plan.rename ? undefined : { label: "Starter & up", tone: "attention" },
     },
   ];
 
+  const counted = snapshot
+    ? `${fmt(snapshot.count)}${snapshot.truncated ? "+" : ""}`
+    : "—";
+
   // Numeric stats get the big tabular figure; word values get a tag so long
-  // labels like "Growth & up" can't wrap into an overlapping headline.
+  // labels can't wrap into an overlapping headline.
   const stats = [
     { label: "Current plan", value: plan.name, tag: "brand" },
-    { label: "Images used", value: fmt(used) },
-    { label: "Images left", value: fmt(remaining) },
-    { label: "Auto-optimize", value: autoStatus.label, tag: autoStatus.tone || "subdued" },
+    { label: "Files in library", value: counted },
+    { label: "Storage (newest files)", value: snapshot ? formatBytes(snapshot.totalBytes) : "—" },
+    { label: "Operations left", value: fmt(remaining) },
   ];
 
   return (
@@ -132,12 +135,12 @@ export default function Index() {
           <BlockStack gap="300">
             <span className="pv-hero-eyebrow">Pixovanta</span>
             <div className="pv-hero-copy">
-              <h1>Faster images, better rankings.</h1>
-              <p>Compress and convert your catalog, auto-generate SEO alt text, and track the page-speed gains — all in one place.</p>
+              <h1>A tidy file library, kept tidy.</h1>
+              <p>See what's in your store's files, find duplicates and dead weight, and rename in bulk — without touching a single product page.</p>
             </div>
           </BlockStack>
-          <Button variant="primary" size="large" onClick={() => navigate("/app/productoptimization")}>
-            Optimize images
+          <Button variant="primary" size="large" onClick={() => navigate("/app/duplicatefinder")}>
+            Scan for duplicates
           </Button>
         </InlineStack>
       </div>
@@ -167,18 +170,49 @@ export default function Index() {
             <BlockStack gap="300">
               <InlineStack align="space-between" blockAlign="center">
                 <InlineStack gap="200" blockAlign="center">
-                  <Text variant="headingSm" as="h2">Monthly image usage</Text>
+                  <Text variant="headingSm" as="h2">Monthly file operations</Text>
                   <Badge tone={plan.tier === "free" ? undefined : "success"}>{`${plan.name} plan`}</Badge>
                 </InlineStack>
                 <Button variant="plain" onClick={() => navigate("/app/billing")}>Manage plan</Button>
               </InlineStack>
               <ProgressBar progress={pct} size="small" tone={pct >= 100 ? "critical" : "primary"} />
               <Text variant="bodySm" as="p" tone="subdued">
-                {`${fmt(used)} of ${fmt(quota)} images this month · ${fmt(remaining)} remaining`}
+                {`${fmt(used)} of ${fmt(quota)} operations this month · ${fmt(remaining)} remaining. Scanning a new file or renaming one counts as one operation; deletes and re-scans of unchanged files are free.`}
               </Text>
             </BlockStack>
           </Card>
         </Layout.Section>
+
+        {/* Library breakdown */}
+        {snapshot && (
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="300">
+                <Text variant="headingSm" as="h2">
+                  {snapshot.truncated
+                    ? `Library snapshot (newest ${fmt(snapshot.count)} files)`
+                    : "Library snapshot"}
+                </Text>
+                <InlineStack gap="400">
+                  <Badge>{`${fmt(snapshot.byType.image)} images`}</Badge>
+                  <Badge>{`${fmt(snapshot.byType.video)} videos`}</Badge>
+                  <Badge>{`${fmt(snapshot.byType.file)} other files`}</Badge>
+                </InlineStack>
+                {snapshot.largest.length > 0 && (
+                  <BlockStack gap="200">
+                    <Text variant="bodySm" as="p" tone="subdued">Largest files</Text>
+                    {snapshot.largest.map((f) => (
+                      <InlineStack key={f.id} align="space-between" blockAlign="center">
+                        <Text variant="bodySm" as="span" truncate>{f.filename || f.id}</Text>
+                        <Text variant="bodySm" as="span" tone="subdued">{formatBytes(f.bytes)}</Text>
+                      </InlineStack>
+                    ))}
+                  </BlockStack>
+                )}
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        )}
 
         {/* Tools — numbered horizontal rows */}
         <Layout.Section>

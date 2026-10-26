@@ -19,10 +19,10 @@ export default function App() {
     <div className={styles.index}>
       <div className={styles.content}>
         <p className={styles.eyebrow}>[ Pixovanta ]</p>
-        <h1 className={styles.heading}>Faster images, better rankings.</h1>
+        <h1 className={styles.heading}>A tidy file library, kept tidy.</h1>
         <p className={styles.text}>
-          Image optimization &amp; SEO suite for Shopify stores. Compress images,
-          generate AI alt text, and track the page-speed gains.
+          Media library manager for Shopify stores. Find duplicate files, clear
+          out files no product uses, and rename in bulk — with a preview first.
         </p>
 
         {showForm && (
@@ -44,28 +44,30 @@ export default function App() {
 
         <ul className={styles.list}>
           <li className={styles.card}>
-            <span className={styles.cardIcon}>◉</span>
-            <strong className={styles.cardTitle}>Smart image compression</strong>
+            <span className={styles.cardIcon}>⧉</span>
+            <strong className={styles.cardTitle}>Duplicate finder</strong>
             <span className={styles.cardBody}>
-              Compress product images and convert them to WebP. The original is
-              replaced in place, and the size saved on each one is measured and
-              recorded rather than estimated.
+              Every file is fingerprinted by its actual content, so re-uploads
+              and renamed copies are caught too. Review each group and delete
+              the copies in bulk — the original stays.
             </span>
           </li>
           <li className={styles.card}>
-            <span className={styles.cardIcon}>✦</span>
-            <strong className={styles.cardTitle}>AI alt text generator</strong>
+            <span className={styles.cardIcon}>◌</span>
+            <strong className={styles.cardTitle}>Unused-file detection</strong>
             <span className={styles.cardBody}>
-              Generate SEO-optimized alt text for product images with AI vision,
-              then bulk-apply it across the catalog in one click.
+              See which images and videos in your library aren&apos;t referenced
+              by any product — old banners, replaced photos, abandoned uploads —
+              and clean them up with care.
             </span>
           </li>
           <li className={styles.card}>
-            <span className={styles.cardIcon}>◬</span>
-            <strong className={styles.cardTitle}>Performance reports</strong>
+            <span className={styles.cardIcon}>✎</span>
+            <strong className={styles.cardTitle}>Bulk rename</strong>
             <span className={styles.cardBody}>
-              Track Core Web Vitals and run live PageSpeed tests to see the
-              measured impact on your product pages.
+              Find &amp; replace, prefixes, suffixes and filename clean-up across
+              the whole library, with a preview of every change before anything
+              is touched.
             </span>
           </li>
         </ul>

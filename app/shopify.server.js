@@ -13,12 +13,8 @@ import { BILLING_CONFIG } from "./billing.server";
 // Prefer IPv4 for every outbound request in this process.
 //
 // This container hangs on IPv6 connect attempts (ConnectTimeoutError to
-// 2620:127:f00e::), which is why optimize.server already sets this. But it set
-// it LAZILY, from inside timedFetch — and timedFetch is only used for image
-// downloads, never for admin.graphql. So on a freshly started container the
-// first Shopify Admin API call still went out with Node's default resolution
-// order. Setting it here, where every route's authenticate/graphql comes from,
-// means it is in place before any request can be made.
+// 2620:127:f00e::). Setting it here, where every route's authenticate/graphql
+// comes from, means it is in place before any request can be made.
 try {
   setDefaultResultOrder("ipv4first");
 } catch {

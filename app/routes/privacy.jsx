@@ -6,10 +6,9 @@
 //
 // Everything below describes what the code in this repository actually does.
 // If you change what is stored (prisma/schema.prisma), what is sent off-site
-// (optimize.server.js, app.alttextsuggestions.jsx, app.pagespeedimpactreports.jsx)
-// or what is deleted (webhooks.app.uninstalled.jsx), update this page to match.
+// (media.server.js) or what is deleted (webhooks.app.uninstalled.jsx), update
+// this page to match.
 import { useLoaderData } from "react-router";
-import { MF_NAMESPACE } from "../constants";
 import styles from "../styles/legal.module.css";
 
 // The operator's identity and contact route are deployment facts, not code, so
@@ -20,7 +19,6 @@ export const loader = () => ({
   entity: process.env.LEGAL_ENTITY_NAME || "SDLC Limited",
   contactEmail: process.env.PRIVACY_CONTACT_EMAIL || null,
   appUrl: process.env.SHOPIFY_APP_URL || "https://pixovanta.onkra.online",
-  namespace: MF_NAMESPACE,
 });
 
 export const meta = () => [
@@ -42,53 +40,25 @@ const STORED_DATA = [
     keep: "Deleted when you uninstall the app.",
   },
   {
-    what: "App settings",
-    detail: "A single on/off flag per shop for “auto-optimize new products”.",
-    why: "To remember your preference between visits.",
-    keep: "Deleted when you uninstall the app.",
-  },
-  {
     what: "Monthly usage counter",
     detail:
-      "Your shop domain, the calendar month, and the number of images optimized in it.",
-    why: "To enforce the image quota included in your plan.",
+      "Your shop domain, the calendar month, and the number of metered file operations (duplicate-scan fingerprints and renames) run in it.",
+    why: "To enforce the file-operation quota included in your plan.",
     keep: "Deleted when you uninstall the app.",
   },
   {
-    what: "Measured image sizes",
+    what: "File content fingerprints",
     detail:
-      "A Shopify CDN image URL and the size in bytes we measured for it. No shop identifier is attached.",
+      "A Shopify CDN file URL, the file's size in bytes, and a SHA-256 fingerprint of its content. No shop identifier is attached, and the fingerprint cannot be turned back into the file.",
     why:
-      "A size cache. Without it the product list would re-measure every image on every page load.",
+      "A scan cache. Without it every duplicate scan would re-download every file; with it a re-scan only downloads files that changed.",
     keep:
-      "Retained as a cache. Entries are keyed by URL only, and a changed image always gets a new URL, so a stale entry is never read again.",
-  },
-];
-
-const THIRD_PARTIES = [
-  {
-    name: "Shopify",
-    sent:
-      "All product, image, file and metafield reads and writes happen through the Shopify Admin API, and optimized images are uploaded back to Shopify's CDN.",
-    when: "Throughout normal use.",
-  },
-  {
-    name: "OpenAI",
-    sent:
-      "The product title and the image's public Shopify CDN URL are sent to the gpt-4o-mini model, which fetches the image from that URL to describe it. No shop domain, merchant name or customer data is included.",
-    when:
-      "Only when alt text is generated — either from the Alt Text Generator, or during optimization for an image that has no usable alt text on a plan that includes the feature.",
-  },
-  {
-    name: "Google PageSpeed Insights",
-    sent:
-      "The public URL of the storefront product page you select. Nothing else.",
-    when: "Only when you press “Run Live PageSpeed Test”.",
+      "Retained as a cache. Entries are keyed by URL only, and a changed file always gets a new URL, so a stale entry is never read again.",
   },
 ];
 
 export default function PrivacyPolicy() {
-  const { entity, contactEmail, appUrl, namespace } = useLoaderData();
+  const { entity, contactEmail, appUrl } = useLoaderData();
 
   const contact = contactEmail ? (
     <a className={styles.link} href={`mailto:${contactEmail}`}>
@@ -104,14 +74,15 @@ export default function PrivacyPolicy() {
         <header className={styles.header}>
           <p className={styles.eyebrow}>[ Pixovanta ]</p>
           <h1 className={styles.title}>Privacy Policy</h1>
-          <p className={styles.updated}>Last updated: 9 October 2026</p>
+          <p className={styles.updated}>Last updated: 26 October 2026</p>
         </header>
 
         <p className={styles.intro}>
-          Pixovanta is a Shopify app operated by {entity} that compresses product
-          images, generates alt text, and reports the measured effect on page
-          speed. This page explains exactly what the app accesses, what it keeps,
-          who else sees it, and how to have it erased.
+          Pixovanta is a Shopify app operated by {entity} that helps merchants
+          manage their store&apos;s file library: finding duplicate files,
+          surfacing files no product uses, and renaming files in bulk. This page
+          explains exactly what the app accesses, what it keeps, who else sees
+          it, and how to have it erased.
         </p>
 
         <div className={styles.callout}>
@@ -135,22 +106,16 @@ export default function PrivacyPolicy() {
           </p>
           <ul className={styles.list}>
             <li>
-              <span className={styles.term}>Products</span> — title, handle,
-              status and online-store URL, used to list what can be optimized.
+              <span className={styles.term}>Files</span> — the file library
+              (Content → Files) is listed with each file&apos;s name, type, size,
+              dimensions and upload date. Files are renamed or deleted only when
+              you explicitly apply a rename or a cleanup.
             </li>
             <li>
-              <span className={styles.term}>Product images and media</span> —
-              downloaded, re-encoded to WebP, uploaded back to your store, and
-              the original image replaced.
-            </li>
-            <li>
-              <span className={styles.term}>Image alt text</span> — read, and
-              written when you generate or apply alt text.
-            </li>
-            <li>
-              <span className={styles.term}>Product metafields</span> — in the{" "}
-              <span className={styles.code}>{namespace}</span> namespace only, to
-              record optimization results (see section 3).
+              <span className={styles.term}>Product media references</span> —
+              which media each product uses, read to determine whether a file in
+              the library is referenced by any product. Products themselves are
+              never modified.
             </li>
           </ul>
         </section>
@@ -190,53 +155,25 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className={styles.section}>
-          <h2 className={styles.h2}>Results stored inside your own store</h2>
+          <h2 className={styles.h2}>How file contents are handled</h2>
           <p className={styles.p}>
-            Optimization results are written to <em>your</em> products as
-            metafields in the{" "}
-            <span className={styles.code}>{namespace}</span> namespace: one record
-            per image (status, size before and after, compression percentage, the
-            alt text applied, a timestamp and the Shopify media IDs) plus one{" "}
-            <span className={styles.code}>optimization_summary</span> per product.
-          </p>
-          <p className={styles.p}>
-            This data belongs to you and stays in your store. It is what lets the
-            savings figures survive a reinstall. Uninstalling the app does not
-            remove these metafields — delete them from your store if you want them
-            gone, or ask us and we will tell you exactly which keys to remove.
-          </p>
-        </section>
-
-        <section className={styles.section}>
-          <h2 className={styles.h2}>How image files are handled</h2>
-          <p className={styles.p}>
-            When an image is optimized it is downloaded from Shopify&apos;s CDN
-            into the app server&apos;s memory, re-encoded, uploaded back to your
-            store, and the original media deleted from the product. The image
-            bytes are not written to our disks and are not kept after the request
-            that processed them finishes.
+            To detect duplicates the app downloads each file once from
+            Shopify&apos;s CDN into the app server&apos;s memory, computes a
+            SHA-256 fingerprint, and discards the bytes. The file contents are
+            not written to our disks and are not kept after the request that
+            processed them finishes — only the fingerprint described in the table
+            above is retained.
           </p>
         </section>
 
         <section className={styles.section}>
           <h2 className={styles.h2}>Third parties that receive data</h2>
           <p className={styles.p}>
-            Pixovanta uses no advertising networks, no analytics trackers and no
-            data brokers. Data leaves our server only in these cases:
-          </p>
-          <ul className={styles.list}>
-            {THIRD_PARTIES.map((tp) => (
-              <li key={tp.name}>
-                <span className={styles.term}>{tp.name}</span> — {tp.sent}{" "}
-                <em>{tp.when}</em>
-              </li>
-            ))}
-          </ul>
-          <p className={styles.p}>
-            The app also contains an optional code path for Anthropic as an
-            alternative alt-text provider. It is inactive unless an Anthropic API
-            key is configured on the deployment; if we ever enable it, this page
-            will be updated before it is used.
+            Pixovanta uses no advertising networks, no analytics trackers, no AI
+            providers and no data brokers. All reads and writes happen through
+            the Shopify Admin API, and file downloads for fingerprinting come
+            from Shopify&apos;s own CDN — data never leaves the app&apos;s
+            infrastructure for any other destination.
           </p>
         </section>
 
@@ -245,8 +182,8 @@ export default function PrivacyPolicy() {
           <ul className={styles.list}>
             <li>
               <span className={styles.term}>When you uninstall</span> — Shopify
-              notifies the app and we delete your credentials, your app settings
-              and your usage counters.
+              notifies the app and we delete your credentials and your usage
+              counters.
             </li>
             <li>
               <span className={styles.term}>Shop erasure requests</span> — Shopify

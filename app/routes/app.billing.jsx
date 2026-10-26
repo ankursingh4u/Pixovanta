@@ -27,10 +27,9 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 // must correspond to functionality that actually ships, because this list is a
 // promise to a paying merchant.
 const FEATURE_LABELS = {
-  optimize: "Image compression & WebP conversion",
-  altText: "AI alt text",
-  autoOptimize: "Auto-optimize new products",
-  pageSpeed: "Page Speed reports",
+  duplicates: "Duplicate finder & bulk cleanup",
+  rename: "Bulk rename with preview",
+  unused: "Unused-file detection",
 };
 
 export const loader = async ({ request }) => {
@@ -43,19 +42,19 @@ export const loader = async ({ request }) => {
     if (e instanceof Response) throw e;
   }
 
-  let usage = { imagesUsed: 0 };
+  let usage = { filesUsed: 0 };
   try { usage = await getUsage(session.shop); } catch { /* table not ready */ }
 
-  const plan = state.plan || { name: "Free", tier: "free", monthlyImages: 100, features: {} };
+  const plan = state.plan || { name: "Free", tier: "free", monthlyFiles: 200, features: {} };
   const included = Object.keys(FEATURE_LABELS).filter((k) => plan.features?.[k]);
 
   return {
     hasActivePlan: state.hasActivePlan,
     planName: plan.name,
     tier: plan.tier,
-    monthlyImages: plan.monthlyImages,
+    monthlyFiles: plan.monthlyFiles,
     included,
-    imagesUsed: usage.imagesUsed || 0,
+    filesUsed: usage.filesUsed || 0,
     // Direct top-frame link target for the Change/Choose-plan CTA.
     pricingUrl: managedPricingUrl(session.shop, state.appHandle),
   };
@@ -87,7 +86,7 @@ export const action = async ({ request }) => {
 };
 
 export default function BillingPage() {
-  const { hasActivePlan, planName, tier, monthlyImages, included, imagesUsed, pricingUrl } = useLoaderData();
+  const { hasActivePlan, planName, tier, monthlyFiles, included, filesUsed, pricingUrl } = useLoaderData();
   const actionData = useActionData();
   const navigation = useNavigation();
   const submit = useSubmit();
@@ -99,8 +98,8 @@ export default function BillingPage() {
     submit(fd, { method: "post" });
   };
 
-  const quota = monthlyImages || 0;
-  const used = imagesUsed || 0;
+  const quota = monthlyFiles || 0;
+  const used = filesUsed || 0;
   const pct = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0;
   const fmt = (n) => Number(n).toLocaleString();
 
@@ -137,7 +136,7 @@ export default function BillingPage() {
                       : <Badge>Current</Badge>}
                   </InlineStack>
                   <Text variant="bodySm" as="p" tone="subdued">
-                    {`Up to ${fmt(quota)} optimized images per month`}
+                    {`Up to ${fmt(quota)} file operations per month`}
                   </Text>
                 </BlockStack>
                 <InlineStack gap="300">
@@ -154,7 +153,7 @@ export default function BillingPage() {
 
               <BlockStack gap="200">
                 <InlineStack align="space-between" blockAlign="center">
-                  <Text variant="bodySm" as="p" tone="subdued">Images this month</Text>
+                  <Text variant="bodySm" as="p" tone="subdued">Operations this month</Text>
                   <Text variant="bodySm" as="p" tone={pct >= 100 ? "critical" : "subdued"}>
                     {`${fmt(used)} / ${fmt(quota)}`}
                   </Text>

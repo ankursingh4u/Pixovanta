@@ -11,9 +11,9 @@
 // `throwIfPotentialCSRFAttack` compares the two, sees http !== https, and
 // rejects the request with 400 Bad Request.
 //
-// The effect was that EVERY action in the app failed — alt-text generation and
-// apply, the auto-optimize toggle, /api/optimize, the live PageSpeed test, the
-// CSV export, and cancelling a subscription — while all GET pages looked fine.
+// The effect was that EVERY action in the app failed — duplicate scans, bulk
+// renames, file deletions, and cancelling a subscription — while all GET pages
+// looked fine.
 // Shopify's own webhook POSTs were unaffected because server-to-server requests
 // send no Origin header at all.
 //
@@ -88,7 +88,7 @@ const server = app.listen(port, host, () => {
 });
 
 // Coolify's rolling update sends SIGTERM to the old container; closing the
-// listener lets in-flight optimization requests finish instead of being cut off.
+// listener lets in-flight scan/rename requests finish instead of being cut off.
 for (const signal of ["SIGTERM", "SIGINT"]) {
   process.once(signal, () => server.close(console.error));
 }

@@ -9,9 +9,8 @@
 //
 // What this app actually stores per shop (see prisma/schema.prisma):
 //   Session       credentials + the staff user's name/email/locale
-//   ShopSettings  the autoOptimize toggle
-//   UsageCounter  monthly image counters
-//   ImageSize     measured byte size of a Shopify CDN image url
+//   UsageCounter  monthly file-operation counters
+//   FileHash      SHA-256 content fingerprint of a Shopify CDN file url
 //
 // None of it is customer data: the app holds `write_products,write_files` and
 // never reads customers, orders or checkouts. That is why the customers/* topics
@@ -21,22 +20,20 @@ import db from "../db.server";
 
 // Erase every row this app holds for a shop.
 //
-// ImageSize is keyed by CDN url rather than by shop, so it cannot be filtered by
+// FileHash is keyed by CDN url rather than by shop, so it cannot be filtered by
 // shop and is deliberately left alone: a url carries no identity beyond "some
-// image was this many bytes", and the rows are unreachable once the shop's
-// products are gone (a changed file gets a new ?v= url, so a stale row is never
-// read again).
+// file had these bytes", and the rows are unreachable once the shop's files are
+// gone (a changed file gets a new ?v= url, so a stale row is never read again).
 async function purgeShop(shop) {
   const results = await Promise.allSettled([
     db.session.deleteMany({ where: { shop } }),
-    db.shopSettings.deleteMany({ where: { shop } }),
     db.usageCounter.deleteMany({ where: { shop } }),
   ]);
   // Report per-table outcomes instead of throwing: a 5xx makes Shopify retry the
   // whole webhook, which would re-run the deletes that already succeeded.
   results.forEach((r, i) => {
     if (r.status === "rejected") {
-      const table = ["session", "shopSettings", "usageCounter"][i];
+      const table = ["session", "usageCounter"][i];
       console.error(`[PURGE] ${shop} ${table} failed:`, r.reason?.message || r.reason);
     }
   });
